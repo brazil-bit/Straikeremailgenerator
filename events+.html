@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Straiker Email Signature Generator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; background:#F9FAFB; color:#111827; }
+
+    header { background:#fff; border-bottom:1px solid #E5E7EB; padding:16px 28px; display:flex; align-items:center; gap:12px; }
+    header h1 { margin:0; font-size:16px; font-weight:700; letter-spacing:-0.3px; }
+    header span { font-size:12px; color:#6B7280; }
+
+    .layout { display:grid; grid-template-columns:330px 1fr; min-height:calc(100vh - 57px); }
+
+    /* ── Form panel ── */
+    .form-panel { background:#fff; border-right:1px solid #E5E7EB; padding:22px 18px; overflow-y:auto; }
+    .sec { font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:#9CA3AF; margin:22px 0 12px; display:flex; align-items:center; gap:8px; }
+    .sec:first-child { margin-top:0; }
+    .sec::after { content:''; flex:1; height:1px; background:#E5E7EB; }
+    .sec .note { font-size:9.5px; font-weight:400; letter-spacing:0; text-transform:none; color:#9CA3AF; white-space:nowrap; }
+    .fg { margin-bottom:12px; }
+    .fg label { display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px; }
+    .fg label .hint { font-size:11px; color:#9CA3AF; font-weight:400; margin-left:3px; }
+    .fg input, .fg select {
+      width:100%; padding:7px 9px; border:1px solid #D1D5DB; border-radius:6px;
+      font-size:13px; outline:none; font-family:inherit; color:#111827;
+      background:#fff; transition:border-color .15s;
+    }
+    .fg select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; padding-right:26px; }
+    .fg input:focus, .fg select:focus { border-color:#DB2777; box-shadow:0 0 0 3px rgba(219,39,119,.1); }
+    .fg input::placeholder { color:#9CA3AF; }
+    .tog-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .tog-row > label:first-child { font-size:12px; font-weight:600; color:#374151; }
+    .tog { position:relative; width:36px; height:20px; flex-shrink:0; }
+    .tog input { opacity:0; width:0; height:0; }
+    .tog-sl { position:absolute; cursor:pointer; inset:0; background:#E5E7EB; border-radius:20px; transition:.2s; }
+    .tog-sl::before { content:''; position:absolute; width:14px; height:14px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+    .tog input:checked + .tog-sl { background:#DB2777; }
+    .tog input:checked + .tog-sl::before { transform:translateX(16px); }
+
+    /* Event mode callout in form */
+    .event-chip { display:inline-block; background:linear-gradient(135deg,#FFB84D,#DB2777); color:#fff; font-size:9.5px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; border-radius:4px; padding:2px 6px; margin-left:6px; vertical-align:middle; }
+
+    /* ── Right panel ── */
+    .right { padding:26px 30px; overflow-y:auto; }
+    .stitle { font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:#9CA3AF; margin:0 0 12px; }
+
+    .preview-card { background:#fff; border:1px solid #E5E7EB; border-radius:8px; padding:22px 26px; margin-bottom:14px; display:inline-block; min-width:420px; }
+
+    .badge { display:inline-flex; align-items:center; gap:6px; background:#ECFDF5; border:1px solid #6EE7B7; border-radius:6px; padding:5px 11px; font-size:12px; color:#065F46; font-weight:600; margin-bottom:14px; }
+
+    .copy-btn { display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg,#FFB84D,#DB2777); color:#fff; border:none; border-radius:7px; padding:10px 20px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:opacity .15s,transform .1s; margin-bottom:28px; }
+    .copy-btn:hover { opacity:.9; }
+    .copy-btn:active { transform:scale(.98); }
+    .copy-btn.ok { background:#10B981; }
+    .copy-btn:disabled { opacity:.45; cursor:not-allowed; }
+
+    .steps { background:#fff; border:1px solid #E5E7EB; border-radius:8px; padding:20px 22px; max-width:540px; }
+    .step { display:flex; gap:12px; margin-bottom:13px; align-items:flex-start; }
+    .step:last-child { margin-bottom:0; }
+    .sn { flex-shrink:0; width:22px; height:22px; background:linear-gradient(135deg,#FFB84D,#DB2777); color:#fff; border-radius:50%; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+    .sb { font-size:13px; color:#374151; line-height:1.55; }
+    .sb strong { color:#111827; }
+    .sb code { background:#F3F4F6; border:1px solid #E5E7EB; border-radius:3px; padding:1px 5px; font-size:11px; font-family:'Courier New',monospace; }
+    .outlook-note { margin-top:16px; padding:11px 14px; background:#FFF7ED; border:1px solid #FED7AA; border-radius:6px; font-size:12px; color:#92400E; line-height:1.55; }
+
+    #copy-src { position:absolute; left:-9999px; top:-9999px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="32" viewBox="0 0 227 327" fill="none">
+    <path d="M179.17 20.7941L145.446 128.71L108.429 117.144L122.841 71.0041L53.8722 127.432L219.619 171.635L226.897 205.385L78.5129 326.79L47.7269 305.996L81.4505 198.08L118.468 209.647L104.049 255.779L173.018 199.352L7.27825 155.155L0 121.405L148.384 0L179.17 20.7941Z" fill="url(#hg)"/>
+    <defs><linearGradient id="hg" x1="171.991" y1="60.7026" x2="47.2507" y2="267.78" gradientUnits="userSpaceOnUse"><stop stop-color="#FFB84D"/><stop offset="1" stop-color="#DB2777"/></linearGradient></defs>
+  </svg>
+  <div><h1>Straiker Signature Generator</h1><span>Fill in your info → Copy Signature → Paste into Gmail or Outlook</span></div>
+</header>
+
+<div class="layout">
+
+  <!-- ══ FORM ══════════════════════════════════════════════════ -->
+  <div class="form-panel">
+
+    <div class="sec">Your Info</div>
+    <div class="fg"><label>Full Name <span class="hint">required</span></label><input id="f-name" value="Jason Sansone" placeholder="Jane Smith" oninput="updateSig()"></div>
+    <div class="fg"><label>Title <span class="hint">required</span></label><input id="f-title" value="Head of Sales" placeholder="Account Executive" oninput="updateSig()"></div>
+    <div class="fg"><label>Phone</label><input id="f-phone" value="973 632-2409" placeholder="555 000-0000" oninput="updateSig()"></div>
+    <div class="fg"><label>Email</label><input id="f-email" value="jason@straiker.ai" placeholder="you@straiker.ai" oninput="updateSig()"></div>
+
+    <div class="sec">Calendly</div>
+    <div class="tog-row"><label>Book a Meeting link</label><label class="tog"><input type="checkbox" id="tog-cal" onchange="toggleField('cal')"><span class="tog-sl"></span></label></div>
+    <div class="fg" id="g-cal" style="display:none"><input id="f-cal" value="https://calendly.com/jason-sansone" placeholder="https://calendly.com/yourname" oninput="updateSig()"></div>
+
+    <div class="sec">Company Channels <span class="note">(same for everyone — "Follow us")</span></div>
+    <div class="tog-row"><label>LinkedIn</label><label class="tog"><input type="checkbox" id="tog-li" checked onchange="toggleField('li')"><span class="tog-sl"></span></label></div>
+    <div class="fg" id="g-li"><input id="f-li" value="https://www.linkedin.com/company/straiker" oninput="updateSig()"></div>
+    <div class="tog-row"><label>X / Twitter</label><label class="tog"><input type="checkbox" id="tog-x" checked onchange="toggleField('x')"><span class="tog-sl"></span></label></div>
+    <div class="fg" id="g-x"><input id="f-x" value="https://x.com/straiker_ai" oninput="updateSig()"></div>
+    <div class="tog-row"><label>YouTube</label><label class="tog"><input type="checkbox" id="tog-yt" onchange="toggleField('yt')"><span class="tog-sl"></span></label></div>
+    <div class="fg" id="g-yt" style="display:none"><input id="f-yt" value="https://youtube.com/@straiker" oninput="updateSig()"></div>
+
+    <!-- ── Event Mode ─────────────────────────────── -->
+    <div class="sec">Event Mode <span class="event-chip">New</span></div>
+    <div class="tog-row"><label>Showing at an event?</label><label class="tog"><input type="checkbox" id="tog-evt" onchange="toggleField('evt')"><span class="tog-sl"></span></label></div>
+    <div id="g-evt" style="display:none">
+      <div class="fg">
+        <label>Quick-fill <span class="hint">pick an event</span></label>
+        <select id="f-evt-pick" onchange="pickEvent()">
+          <option value="">— choose or fill in below —</option>
+          <optgroup label="⚡ Straiker Events">
+            <option value="OWASP GenAI Security Kickoff Party|Mar 23, 2026 · San Francisco, CA">OWASP GenAI Security Kickoff Party</option>
+            <option value="Agentic AI Leadership Breakfast|Mar 24, 2026 · San Francisco, CA">Agentic AI Leadership Breakfast</option>
+            <option value="Straiker x Andromeda|Mar 24–26, 2026 · San Francisco, CA">Straiker x Andromeda</option>
+          </optgroup>
+          <optgroup label="Industry — 2025">
+            <option value="Gartner Security Summit|Jun 9–11, 2025 · National Harbor, MD">Gartner Security &amp; Risk Summit</option>
+            <option value="Black Hat USA|Aug 2–7, 2025 · Las Vegas, NV">Black Hat USA</option>
+            <option value="DEF CON 33|Aug 7–10, 2025 · Las Vegas, NV">DEF CON 33</option>
+            <option value="Infosecurity Europe|Jun 3–5, 2025 · London, UK">Infosecurity Europe</option>
+            <option value="AWS re:Invent|Dec 1–5, 2025 · Las Vegas, NV">AWS re:Invent</option>
+            <option value="Microsoft Ignite|Nov 17–21, 2025 · Chicago, IL">Microsoft Ignite</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="fg"><label>Event Name</label><input id="f-evt-name" placeholder="e.g. Black Hat USA" oninput="updateSig()"></div>
+      <div class="fg"><label>Dates &amp; Location</label><input id="f-evt-dates" placeholder="e.g. Aug 2–7, 2025 · Las Vegas" oninput="updateSig()"></div>
+      <div class="fg"><label>CTA Text</label><input id="f-evt-cta" value="Book time at our booth →" oninput="updateSig()"></div>
+      <div class="fg"><label>CTA Link <span class="hint">defaults to your Calendly</span></label><input id="f-evt-url" placeholder="https://calendly.com/yourname" oninput="updateSig()"></div>
+    </div>
+
+  </div>
+
+  <!-- ══ PREVIEW + INSTRUCTIONS ═══════════════════════════════ -->
+  <div class="right">
+    <p class="stitle">Live Preview</p>
+    <div class="preview-card" id="preview"><em style="color:#9CA3AF;font-size:13px;">Generating images…</em></div>
+
+    <div class="badge">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      All images embedded as PNG — works in Gmail &amp; Outlook
+    </div><br>
+
+    <button class="copy-btn" id="copy-btn" onclick="copySig(this)" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      Preparing images…
+    </button>
+
+    <p class="stitle">How to install in Gmail</p>
+    <div class="steps">
+      <div class="step"><div class="sn">1</div><div class="sb">Click <strong>Copy Signature</strong> above.</div></div>
+      <div class="step"><div class="sn">2</div><div class="sb">Open <strong>Gmail</strong> → click the <strong>gear ⚙</strong> (top right) → <strong>See all settings</strong>.</div></div>
+      <div class="step"><div class="sn">3</div><div class="sb"><strong>General</strong> tab → scroll to <strong>Signature</strong> → <strong>+ Create new</strong> → name it <code>Straiker</code>.</div></div>
+      <div class="step"><div class="sn">4</div><div class="sb">Click inside the box → press <code>⌘V</code> (Mac) or <code>Ctrl+V</code> (Windows). Full signature appears with logo.</div></div>
+      <div class="step"><div class="sn">5</div><div class="sb">Scroll down → <strong>Save Changes</strong>. Done.</div></div>
+      <div class="step"><div class="sn">💡</div><div class="sb"><strong>Event tip:</strong> Before a conference, come back here, toggle on Event Mode, pick the event, re-copy, and paste over your existing signature. Takes 30 seconds.</div></div>
+      <div class="outlook-note"><strong>Outlook:</strong> File → Options → Mail → Signatures → New → paste with <code>Ctrl+V</code> in the rich-text editor.</div>
+    </div>
+  </div>
+</div>
+
+<div id="copy-src"></div>
+
+<script>
+// ── SVG bolt ──────────────────────────────────────────────────────────────────
+const BOLT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="227" height="327" viewBox="0 0 227 327" fill="none"><path d="M179.17 20.7941L145.446 128.71L108.429 117.144L122.841 71.0041L53.8722 127.432L219.619 171.635L226.897 205.385L78.5129 326.79L47.7269 305.996L81.4505 198.08L118.468 209.647L104.049 255.779L173.018 199.352L7.27825 155.155L0 121.405L148.384 0L179.17 20.7941Z" fill="url(#g)"/><defs><linearGradient id="g" x1="171.991" y1="60.7026" x2="47.2507" y2="267.78" gradientUnits="userSpaceOnUse"><stop stop-color="#FFB84D"/><stop offset="1" stop-color="#DB2777"/></linearGradient></defs></svg>`;
+
+// ── SVG → PNG (data URI — works on file:// and https://) ─────────────────────
+function svgToPng(svgStr, dw, dh, scale=3) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    // data URI avoids blob URL restrictions on file:// protocol
+    const dataUri = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = dw*scale; c.height = dh*scale;
+        const ctx = c.getContext('2d');
+        ctx.scale(scale, scale);
+        ctx.drawImage(img, 0, 0, dw, dh);
+        res(c.toDataURL('image/png'));
+      } catch(e) { rej(e); }
+    };
+    img.onerror = (e) => rej(e);
+    img.src = dataUri;
+  });
+}
+
+// ── Social icon → PNG ─────────────────────────────────────────────────────────
+function makeIconPng(bg, label, size=28, scale=3) {
+  return new Promise(res => {
+    const c = document.createElement('canvas');
+    c.width = size*scale; c.height = size*scale;
+    const ctx = c.getContext('2d');
+    ctx.scale(scale, scale);
+    const r = 5;
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.moveTo(r,0); ctx.lineTo(size-r,0); ctx.arcTo(size,0,size,r,r);
+    ctx.lineTo(size,size-r); ctx.arcTo(size,size,size-r,size,r);
+    ctx.lineTo(r,size); ctx.arcTo(0,size,0,size-r,r);
+    ctx.lineTo(0,r); ctx.arcTo(0,0,r,0,r);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (label === 'yt') {
+      const cx=size/2, cy=size/2, tw=9, th=10;
+      ctx.beginPath();
+      ctx.moveTo(cx-tw/2+1, cy-th/2);
+      ctx.lineTo(cx+tw/2+1, cy);
+      ctx.lineTo(cx-tw/2+1, cy+th/2);
+      ctx.closePath(); ctx.fill();
+    } else {
+      ctx.font = `bold ${label==='in'?13:12}px Arial,sans-serif`;
+      ctx.fillText(label, size/2, size/2+1);
+    }
+    res(c.toDataURL('image/png'));
+  });
+}
+
+// ── Assets ────────────────────────────────────────────────────────────────────
+const IMGS = {};
+
+async function loadAssets() {
+  try {
+    const [bolt, li, x, yt] = await Promise.all([
+      svgToPng(BOLT_SVG, 58, 84),
+      makeIconPng('#0A66C2', 'in'),
+      makeIconPng('#000000', 'X'),
+      makeIconPng('#FF0000', 'yt'),
+    ]);
+    IMGS.bolt=bolt; IMGS.li=li; IMGS.x=x; IMGS.yt=yt;
+    const btn = document.getElementById('copy-btn');
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Signature`;
+    updateSig();
+  } catch(err) {
+    const btn = document.getElementById('copy-btn');
+    btn.innerHTML = '⚠️ Image render failed — try refreshing';
+    document.getElementById('preview').innerHTML =
+      `<p style="color:#EF4444;font-size:13px;font-family:Arial,sans-serif;">
+        Could not generate images. Make sure you're opening this file in <strong>Chrome</strong>
+        (not Safari or Firefox), then press <strong>⌘R</strong> to refresh.
+      </p>`;
+    console.error('loadAssets failed:', err);
+  }
+}
+
+// ── Toggle helpers ────────────────────────────────────────────────────────────
+function toggleField(id) {
+  const checked = document.getElementById('tog-'+id).checked;
+  document.getElementById('g-'+id).style.display = checked ? '' : 'none';
+  updateSig();
+}
+['cal','li','x','yt','evt'].forEach(id =>
+  document.getElementById('tog-'+id).addEventListener('change', () => toggleField(id))
+);
+
+// ── Event quick-fill ──────────────────────────────────────────────────────────
+function pickEvent() {
+  const val = document.getElementById('f-evt-pick').value;
+  if (!val) return;
+  const [name, dates] = val.split('|');
+  document.getElementById('f-evt-name').value = name;
+  document.getElementById('f-evt-dates').value = dates;
+  // Default CTA URL to Calendly if set
+  const cal = document.getElementById('f-cal').value.trim();
+  if (cal && !document.getElementById('f-evt-url').value)
+    document.getElementById('f-evt-url').value = cal;
+  updateSig();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function ea(s)  { return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+const img = (src,w,h,alt) => `<img src="${src}" width="${w}" height="${h}" alt="${alt}" border="0" style="display:block;">`;
+
+// ── Build signature ───────────────────────────────────────────────────────────
+function buildSig() {
+  if (!IMGS.bolt) return '<p style="color:#9CA3AF;font-size:13px">Loading…</p>';
+
+  const name    = esc(document.getElementById('f-name').value.trim()  || 'Your Name');
+  const title   = esc(document.getElementById('f-title').value.trim() || 'Your Title');
+  const phone   = document.getElementById('f-phone').value.trim();
+  const email   = document.getElementById('f-email').value.trim();
+  const showCal = document.getElementById('tog-cal').checked;
+  const calUrl  = document.getElementById('f-cal').value.trim();
+  const showLi  = document.getElementById('tog-li').checked;
+  const liUrl   = document.getElementById('f-li').value.trim();
+  const showX   = document.getElementById('tog-x').checked;
+  const xUrl    = document.getElementById('f-x').value.trim();
+  const showYt  = document.getElementById('tog-yt').checked;
+  const ytUrl   = document.getElementById('f-yt').value.trim();
+  const showEvt = document.getElementById('tog-evt').checked;
+  const evtName = document.getElementById('f-evt-name').value.trim();
+  const evtDates= document.getElementById('f-evt-dates').value.trim();
+  const evtCta  = document.getElementById('f-evt-cta').value.trim() || 'Book time at our booth →';
+  const evtUrl  = document.getElementById('f-evt-url').value.trim() || calUrl;
+
+  const phoneRow = phone ? `
+    <tr><td style="padding-bottom:3px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#374151;">
+      <span style="color:#FFB84D;">&#9742;</span>&nbsp;${esc(phone)}
+    </td></tr>` : '';
+
+  const emailRow = email ? `
+    <tr><td style="padding-bottom:3px;font-family:Arial,Helvetica,sans-serif;font-size:12px;">
+      <span style="color:#FFB84D;">&#9993;</span>&nbsp;<a href="mailto:${ea(email)}" style="color:#DB2777;text-decoration:none;">${esc(email)}</a>
+    </td></tr>` : '';
+
+  const websiteRow = `
+    <tr><td style="padding-bottom:${showCal?3:14}px;font-family:Arial,Helvetica,sans-serif;font-size:12px;">
+      <span style="color:#FFB84D;">&#127758;</span>&nbsp;<a href="https://straiker.ai" style="color:#DB2777;text-decoration:none;">straiker.ai</a>
+    </td></tr>`;
+
+  const calendlyRow = showCal && calUrl ? `
+    <tr><td style="padding-bottom:14px;font-family:Arial,Helvetica,sans-serif;font-size:12px;">
+      <span style="color:#FFB84D;">&#128197;</span>&nbsp;<a href="${ea(calUrl)}" target="_blank" style="color:#DB2777;text-decoration:none;font-weight:600;">Book a meeting</a>
+    </td></tr>` : '';
+
+  const socialCells = [
+    showLi ? `<td style="padding-right:5px;"><a href="${ea(liUrl)}" target="_blank" style="text-decoration:none;">${img(IMGS.li,28,28,'LinkedIn')}</a></td>` : '',
+    showX  ? `<td style="padding-right:5px;"><a href="${ea(xUrl)}"  target="_blank" style="text-decoration:none;">${img(IMGS.x,28,28,'X')}</a></td>` : '',
+    showYt ? `<td><a href="${ea(ytUrl)}" target="_blank" style="text-decoration:none;">${img(IMGS.yt,28,28,'YouTube')}</a></td>` : '',
+  ].filter(Boolean).join('');
+
+  const socialRow = socialCells ? `
+    <tr><td style="padding-bottom:4px;font-size:11px;color:#6B7280;font-family:Arial,Helvetica,sans-serif;">Follow us:</td></tr>
+    <tr><td><table cellpadding="0" cellspacing="0" border="0"><tr>${socialCells}</tr></table></td></tr>` : '';
+
+  // Event banner — full-width strip below the signature
+  const eventBanner = (showEvt && evtName) ? `
+    <tr><td style="padding-top:14px;">
+      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td style="padding:10px 14px;border-left:3px solid #DB2777;background-color:#FFF5F9;font-family:Arial,Helvetica,sans-serif;">
+            <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#DB2777;font-family:Arial,Helvetica,sans-serif;">&#128205; Meet us at</span><br>
+            <span style="font-size:13px;font-weight:700;color:#111827;font-family:Arial,Helvetica,sans-serif;">${esc(evtName)}</span>
+            ${evtDates ? `<span style="font-size:12px;color:#6B7280;font-family:Arial,Helvetica,sans-serif;"> &nbsp;·&nbsp; ${esc(evtDates)}</span>` : ''}
+            ${evtUrl ? `<br><a href="${ea(evtUrl)}" target="_blank" style="font-size:12px;font-weight:700;color:#DB2777;text-decoration:none;font-family:Arial,Helvetica,sans-serif;">${esc(evtCta)}</a>` : ''}
+          </td>
+        </tr>
+      </table>
+    </td></tr>` : '';
+
+  return `<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
+  <tr>
+
+    <!-- Logo -->
+    <td valign="middle" align="center" style="padding:0 22px 0 0;vertical-align:middle;">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td align="center">${img(IMGS.bolt,58,84,'Straiker')}</td></tr>
+        <tr><td align="center" style="padding-top:6px;font-size:9.5px;font-weight:700;letter-spacing:3px;color:#DB2777;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;">STRAIKER</td></tr>
+        <tr><td align="center" style="padding-top:2px;font-size:8px;font-weight:600;letter-spacing:0.5px;color:#9CA3AF;font-style:italic;font-family:Arial,Helvetica,sans-serif;white-space:nowrap;">The Agentic Security Company</td></tr>
+      </table>
+    </td>
+
+    <!-- Divider -->
+    <td style="width:2px;padding:0;" bgcolor="#DB2777">&nbsp;</td>
+
+    <!-- Contact -->
+    <td valign="middle" style="padding:0 0 0 22px;vertical-align:middle;">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom:2px;font-size:15px;font-weight:700;color:#111827;letter-spacing:-0.3px;font-family:Arial,Helvetica,sans-serif;">${name}</td></tr>
+        <tr><td style="padding-bottom:1px;font-size:12px;color:#6B7280;font-family:Arial,Helvetica,sans-serif;">${title}</td></tr>
+        <tr><td style="padding-bottom:11px;font-size:12px;font-weight:700;color:#DB2777;font-family:Arial,Helvetica,sans-serif;">Straiker</td></tr>
+        ${phoneRow}${emailRow}${websiteRow}${calendlyRow}${socialRow}
+      </table>
+    </td>
+
+  </tr>
+  ${eventBanner}
+</table>`;
+}
+
+function updateSig() {
+  document.getElementById('preview').innerHTML = buildSig();
+}
+
+async function copySig(btn) {
+  const html = buildSig();
+  let ok = false;
+  try {
+    await navigator.clipboard.write([new ClipboardItem({'text/html': new Blob([html],{type:'text/html'})})]);
+    ok = true;
+  } catch(_) {}
+  if (!ok) {
+    try {
+      const el = document.getElementById('copy-src');
+      el.innerHTML = html;
+      const r = document.createRange(); r.selectNodeContents(el);
+      getSelection().removeAllRanges(); getSelection().addRange(r);
+      document.execCommand('copy');
+      getSelection().removeAllRanges();
+      ok = true;
+    } catch(_) {}
+  }
+  if (ok) {
+    btn.classList.add('ok');
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    setTimeout(() => {
+      btn.classList.remove('ok');
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Signature`;
+    }, 2500);
+  }
+}
+
+loadAssets();
+</script>
+</body>
+</html>
